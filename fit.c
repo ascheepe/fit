@@ -198,40 +198,41 @@ normalize_path(char *path)
 
 /*
  * A dynamic array which holds void pointers to 'size' data items. If
- * capacity 'cap' is reached adding to it will resize it to double
+ * capacity 'limit' is reached adding to it will resize it to double
  * it's current capacity.
  */
 struct array {
 	void **items;
 	size_t size;
-	size_t cap;
+	size_t limit;
 };
 
 static struct array *
 array_new(void)
 {
-	struct array *a;
+	struct array *array;
 
-#define INITIAL_ARRAY_CAPACITY 64
-	a = xmalloc(sizeof(struct array));
-	a->items = xmalloc(sizeof(void *) * INITIAL_ARRAY_CAPACITY);
-	a->cap = INITIAL_ARRAY_CAPACITY;
-	a->size = 0;
+	#define INITIAL_ARRAY_LIMIT 64
+	array = xmalloc(sizeof(struct array));
+	array->items = xmalloc(sizeof(void *) * INITIAL_ARRAY_LIMIT);
+	array->limit = INITIAL_ARRAY_LIMIT;
+	array->size = 0;
 
-	return a;
+	return array;
 }
 
 static void
-array_add(struct array *a, void *data)
+array_add(struct array *array, void *data)
 {
-	if (a->size == a->cap) {
-		size_t newcap = a->cap * 2;
+	if (array->size == array->limit) {
+		size_t new_limit = array->limit * 2;
 
-		a->items = xrealloc(a->items, sizeof(void *) * newcap);
-		a->cap = newcap;
+		array->items =
+		    xrealloc(array->items, sizeof(void *) * new_limit);
+		array->limit = new_limit;
 	}
 
-	a->items[a->size++] = data;
+	array->items[array->size++] = data;
 }
 
 /*
@@ -240,47 +241,47 @@ array_add(struct array *a, void *data)
  * the array.
  */
 static void
-array_free(struct array *a, void (*f)(void *))
+array_free(struct array *array, void (*free_function)(void *))
 {
-	if (f != NULL) {
+	if (free_function != NULL) {
 		size_t i;
 
-		for (i = 0; i < a->size; ++i)
-			f(a->items[i]);
+		for (i = 0; i < array->size; ++i)
+			free_function(array->items[i]);
 	}
 
-	free(a->items);
-	free(a);
+	free(array->items);
+	free(array);
 }
 
 /*
- * To be able to fit files and present a disklist fileinfo stores the
+ * To be able to fit files and present a disklist file_info stores the
  * size and the name of a file.
  */
-struct fileinfo {
+struct file_info {
 	off_t size;
 	char *name;
 };
 
-static struct fileinfo *
-fileinfo_new(char *name, off_t size)
+static struct file_info *
+file_info_new(char *name, off_t size)
 {
-	struct fileinfo *file;
+	struct file_info *file_info;
 
-	file = xmalloc(sizeof(struct fileinfo));
-	file->name = name;
-	file->size = size;
+	file_info = xmalloc(sizeof(struct file_info));
+	file_info->name = name;
+	file_info->size = size;
 
-	return file;
+	return file_info;
 }
 
 static void
-fileinfo_free(void *fileinfo_ptr)
+file_info_free(void *file_info_ptr)
 {
-	struct fileinfo *file = fileinfo_ptr;
+	struct file_info *file_info = file_info_ptr;
 
-	free(file->name);
-	free(file);
+	free(file_info->name);
+	free(file_info);
 }
 
 /*
@@ -358,10 +359,10 @@ disk_print(struct disk *disk)
 
 	/* and the contents */
 	for (i = 0; i < disk->files->size; ++i) {
-		struct fileinfo *file = disk->files->items[i];
+		struct file_info *file_info = disk->files->items[i];
 
-		sizestr = number_to_string(file->size);
-		printf("%10s %s\n", sizestr, file->name);
+		sizestr = number_to_string(file_info->size);
+		printf("%10s %s\n", sizestr, file_info->name);
 		free(sizestr);
 	}
 	putchar('\n');
@@ -411,8 +412,7 @@ make_dirs(char *path)
 static void
 disk_link(struct disk *disk, char *destdir)
 {
-	char *path;
-	char *temp;
+	char *path, *temp;
 	size_t i;
 
 	if (disk->id > 9999)
@@ -425,23 +425,23 @@ disk_link(struct disk *disk, char *destdir)
 	path = temp;
 
 	for (i = 0; i < disk->files->size; ++i) {
-		struct fileinfo *file = disk->files->items[i];
-		char *destfile;
-		char *slashpos;
+		struct file_info *file_info = disk->files->items[i];
+		char *destfile, *slashpos;
 
-		destfile = xmalloc(strlen(path) + strlen(file->name) + 2);
-		sprintf(destfile, "%s/%s", path, file->name);
+		destfile =
+		    xmalloc(strlen(path) + strlen(file_info->name) + 2);
+		sprintf(destfile, "%s/%s", path, file_info->name);
 
 		slashpos = strrchr(destfile, '/');
 		*slashpos = '\0';
 		make_dirs(destfile);
 		*slashpos = '/';
 
-		if (link(file->name, destfile) == -1)
-			err(1, "can't link '%s' to '%s'", file->name,
+		if (link(file_info->name, destfile) == -1)
+			err(1, "can't link '%s' to '%s'", file_info->name,
 			    destfile);
 
-		printf("%s -> %s\n", file->name, path);
+		printf("%s -> %s\n", file_info->name, path);
 		free(destfile);
 	}
 
@@ -449,10 +449,10 @@ disk_link(struct disk *disk, char *destdir)
 }
 
 static int
-compare_fileinfo(const void *a, const void *b)
+compare_file_info(const void *a, const void *b)
 {
-	struct fileinfo *fa = *((struct fileinfo **) a);
-	struct fileinfo *fb = *((struct fileinfo **) b);
+	struct file_info *fa = *((struct file_info **) a);
+	struct file_info *fb = *((struct file_info **) b);
 
 	/* order by size, descending */
 	if (fa->size < fb->size)
@@ -475,19 +475,19 @@ fit_files(struct array *files, struct array *disks)
 {
 	size_t i;
 
-	qsort(files->items, files->size, sizeof(void *), compare_fileinfo);
+	qsort(files->items, files->size, sizeof(void *), compare_file_info);
 
 	for (i = 0; i < files->size; ++i) {
-		struct fileinfo *file = files->items[i];
+		struct file_info *file_info = files->items[i];
 		int added = false;
 		size_t j;
 
 		for (j = 0; j < disks->size; ++j) {
 			struct disk *disk = disks->items[j];
 
-			if (disk->free - file->size >= 0) {
-				array_add(disk->files, file);
-				disk->free -= file->size;
+			if (disk->free - file_info->size >= 0) {
+				array_add(disk->files, file_info);
+				disk->free -= file_info->size;
 				added = true;
 				break;
 			}
@@ -497,8 +497,8 @@ fit_files(struct array *files, struct array *disks)
 			struct disk *disk;
 
 			disk = disk_new(g_disk_size);
-			array_add(disk->files, file);
-			disk->free -= file->size;
+			array_add(disk->files, file_info);
+			disk->free -= file_info->size;
 			array_add(disks, disk);
 		}
 	}
@@ -537,7 +537,7 @@ collect_files(char *path, struct array *files, int recursive)
 				collect_files(fullname, files, recursive);
 			free(fullname);
 		} else {
-			struct fileinfo *file;
+			struct file_info *file_info;
 
 			if (sb.st_size > g_disk_size) {
 				char *sizestr;
@@ -547,8 +547,8 @@ collect_files(char *path, struct array *files, int recursive)
 				    fullname, sizestr);
 			}
 
-			file = fileinfo_new(fullname, sb.st_size);
-			array_add(files, file);
+			file_info = file_info_new(fullname, sb.st_size);
+			array_add(files, file_info);
 		}
 	}
 
@@ -562,24 +562,16 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
-/*
- * Program options are stored as a bitset.
- */
-#define OPT_LINK	1
-#define OPT_SHOW_ONLY	2
-#define OPT_RECURSIVE	4
-#define OPT_SIZE	8
-
 int
 main(int argc, char **argv)
 {
 	char *destdir;
 	struct array *files, *disks;
 	size_t i;
-	int arg, opt, options;
+	int arg, opt, lflag, nflag, rflag, sflag;
 
 	destdir = NULL;
-	options = 0;
+	lflag = nflag = rflag = sflag = 0;
 	while ((opt = getopt(argc, argv, "hl:nrs:")) != -1) {
 		switch (opt) {
 		case 'h':
@@ -588,29 +580,29 @@ main(int argc, char **argv)
 
 		case 'l':
 			destdir = normalize_path(optarg);
-			options |= OPT_LINK;
+			++lflag;
 			break;
 
 		case 'n':
-			options |= OPT_SHOW_ONLY;
+			++nflag;
 			break;
 
 		case 'r':
-			options |= OPT_RECURSIVE;
+			++rflag;
 			break;
 
 		case 's':
 			g_disk_size = string_to_number(optarg);
-			options |= OPT_SIZE;
+			++sflag;
 			break;
 
 		case '?':
-			exit(EXIT_FAILURE);
+			usage();
 		}
 	}
 
 	/* A path argument and the size option is mandatory. */
-	if (optind >= argc || !(options & OPT_SIZE))
+	if (optind >= argc || !sflag)
 		usage();
 
 	/* The given size should be positive */
@@ -622,7 +614,7 @@ main(int argc, char **argv)
 		char *path;
 
 		path = normalize_path(argv[arg]);
-		collect_files(path, files, options & OPT_RECURSIVE);
+		collect_files(path, files, rflag);
 		free(path);
 	}
 
@@ -639,7 +631,7 @@ main(int argc, char **argv)
 	if (disks->size > 9999)
 		errx(1, "fitting takes too many disks. (> 9999)");
 
-	if (options & OPT_SHOW_ONLY) {
+	if (nflag) {
 		printf("%lu disk%s.\n", (unsigned long) disks->size,
 		    disks->size > 1 ? "s" : "");
 		exit(EXIT_SUCCESS);
@@ -648,15 +640,15 @@ main(int argc, char **argv)
 	for (i = 0; i < disks->size; ++i) {
 		struct disk *disk = disks->items[i];
 
-		if (options & OPT_LINK)
+		if (lflag)
 			disk_link(disk, destdir);
 		else
 			disk_print(disk);
 	}
 
-	array_free(files, fileinfo_free);
+	array_free(files, file_info_free);
 	array_free(disks, disk_free);
-	if (options & OPT_LINK)
+	if (lflag)
 		free(destdir);
 
 	return EXIT_SUCCESS;
