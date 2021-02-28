@@ -46,7 +46,7 @@ options:\n\
 #define GB (MB * KB)
 #define TB (GB * KB)
 
-#define BUFSIZE 4096
+#define BUFSIZE 512
 
 static off_t g_disk_size = 0;
 
