@@ -252,33 +252,33 @@ array_free(struct array *a, void (*free_function)(void *))
 }
 
 /*
- * To be able to fit files and present a disklist file_info stores the
+ * To be able to fit files and present a disklist fileinfo stores the
  * size and the name of a file.
  */
-struct file_info {
+struct fileinfo {
 	off_t size;
 	char *name;
 };
 
-static struct file_info *
-file_info_new(char *name, off_t size)
+static struct fileinfo *
+fileinfo_new(char *name, off_t size)
 {
-	struct file_info *file_info;
+	struct fileinfo *fileinfo;
 
-	file_info = emalloc(sizeof(struct file_info));
-	file_info->name = name;
-	file_info->size = size;
+	fileinfo = emalloc(sizeof(struct fileinfo));
+	fileinfo->name = name;
+	fileinfo->size = size;
 
-	return file_info;
+	return fileinfo;
 }
 
 static void
-file_info_free(void *file_info_ptr)
+fileinfo_free(void *fileinfo_ptr)
 {
-	struct file_info *file_info = file_info_ptr;
+	struct fileinfo *fileinfo = fileinfo_ptr;
 
-	free(file_info->name);
-	free(file_info);
+	free(fileinfo->name);
+	free(fileinfo);
 }
 
 /*
@@ -356,10 +356,10 @@ disk_print(struct disk *disk)
 
 	/* and the contents */
 	for (i = 0; i < disk->files->size; ++i) {
-		struct file_info *file_info = disk->files->items[i];
+		struct fileinfo *fileinfo = disk->files->items[i];
 
-		sizestr = number_to_string(file_info->size);
-		printf("%10s %s\n", sizestr, file_info->name);
+		sizestr = number_to_string(fileinfo->size);
+		printf("%10s %s\n", sizestr, fileinfo->name);
 		free(sizestr);
 	}
 	putchar('\n');
@@ -422,23 +422,23 @@ disk_link(struct disk *disk, char *destdir)
 	path = temp;
 
 	for (i = 0; i < disk->files->size; ++i) {
-		struct file_info *file_info = disk->files->items[i];
+		struct fileinfo *fileinfo = disk->files->items[i];
 		char *destfile, *slashpos;
 
 		destfile =
-		    emalloc(strlen(path) + strlen(file_info->name) + 2);
-		sprintf(destfile, "%s/%s", path, file_info->name);
+		    emalloc(strlen(path) + strlen(fileinfo->name) + 2);
+		sprintf(destfile, "%s/%s", path, fileinfo->name);
 
 		slashpos = strrchr(destfile, '/');
 		*slashpos = '\0';
 		make_dirs(destfile);
 		*slashpos = '/';
 
-		if (link(file_info->name, destfile) == -1)
-			err(1, "can't link '%s' to '%s'", file_info->name,
+		if (link(fileinfo->name, destfile) == -1)
+			err(1, "can't link '%s' to '%s'", fileinfo->name,
 			    destfile);
 
-		printf("%s -> %s\n", file_info->name, path);
+		printf("%s -> %s\n", fileinfo->name, path);
 		free(destfile);
 	}
 
@@ -446,10 +446,10 @@ disk_link(struct disk *disk, char *destdir)
 }
 
 static int
-compare_file_info(const void *a, const void *b)
+compare_fileinfo(const void *a, const void *b)
 {
-	struct file_info *fa = *((struct file_info **) a);
-	struct file_info *fb = *((struct file_info **) b);
+	struct fileinfo *fa = *((struct fileinfo **) a);
+	struct fileinfo *fb = *((struct fileinfo **) b);
 
 	/* order by size, descending */
 	if (fa->size < fb->size)
@@ -472,19 +472,19 @@ fit_files(struct array *files, struct array *disks)
 {
 	size_t i;
 
-	qsort(files->items, files->size, sizeof(void *), compare_file_info);
+	qsort(files->items, files->size, sizeof(void *), compare_fileinfo);
 
 	for (i = 0; i < files->size; ++i) {
-		struct file_info *file_info = files->items[i];
+		struct fileinfo *fileinfo = files->items[i];
 		int added = false;
 		size_t j;
 
 		for (j = 0; j < disks->size; ++j) {
 			struct disk *disk = disks->items[j];
 
-			if (disk->free - file_info->size >= 0) {
-				array_add(disk->files, file_info);
-				disk->free -= file_info->size;
+			if (disk->free - fileinfo->size >= 0) {
+				array_add(disk->files, fileinfo);
+				disk->free -= fileinfo->size;
 				added = true;
 				break;
 			}
@@ -494,8 +494,8 @@ fit_files(struct array *files, struct array *disks)
 			struct disk *disk;
 
 			disk = disk_new(g_disk_size);
-			array_add(disk->files, file_info);
-			disk->free -= file_info->size;
+			array_add(disk->files, fileinfo);
+			disk->free -= fileinfo->size;
 			array_add(disks, disk);
 		}
 	}
@@ -534,7 +534,7 @@ collect_files(char *path, struct array *files, int recursive)
 				collect_files(fullname, files, recursive);
 			free(fullname);
 		} else {
-			struct file_info *file_info;
+			struct fileinfo *fileinfo;
 
 			if (st.st_size > g_disk_size) {
 				char *sizestr;
@@ -544,8 +544,8 @@ collect_files(char *path, struct array *files, int recursive)
 				    fullname, sizestr);
 			}
 
-			file_info = file_info_new(fullname, st.st_size);
-			array_add(files, file_info);
+			fileinfo = fileinfo_new(fullname, st.st_size);
+			array_add(files, fileinfo);
 		}
 	}
 
@@ -643,7 +643,7 @@ main(int argc, char **argv)
 			disk_print(disk);
 	}
 
-	array_free(files, file_info_free);
+	array_free(files, fileinfo_free);
 	array_free(disks, disk_free);
 	if (lflag)
 		free(destdir);
