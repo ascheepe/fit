@@ -425,8 +425,7 @@ disk_link(struct disk *disk, char *destdir)
 		struct fileinfo *fileinfo = disk->files->items[i];
 		char *destfile, *slashpos;
 
-		destfile =
-		    emalloc(strlen(path) + strlen(fileinfo->name) + 2);
+		destfile = emalloc(strlen(path) + strlen(fileinfo->name) + 2);
 		sprintf(destfile, "%s/%s", path, fileinfo->name);
 
 		slashpos = strrchr(destfile, '/');
