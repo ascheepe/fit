@@ -57,31 +57,31 @@ enum { false, true };
  * c stdlib/posix counterparts which exit on error.
  */
 static void *
-xmalloc(size_t size)
+emalloc(size_t size)
 {
 	void *ret;
 
 	ret = malloc(size);
 	if (ret == NULL)
-		errx(1, "xmalloc: no more memory.");
+		errx(1, "emalloc: no more memory.");
 
 	return ret;
 }
 
 static void *
-xrealloc(void *ptr, size_t size)
+erealloc(void *ptr, size_t size)
 {
 	void *ret;
 
 	ret = realloc(ptr, size);
 	if (ret == NULL)
-		errx(1, "xrealloc: no more memory.");
+		errx(1, "erealloc: no more memory.");
 
 	return ret;
 }
 
 static char *
-xstrdup(const char *str)
+estrdup(const char *str)
 {
 	size_t size;
 	char *ret;
@@ -89,7 +89,7 @@ xstrdup(const char *str)
 	size = strlen(str) + 1;
 	ret = malloc(size);
 	if (ret == NULL)
-		errx(1, "xstrdup: no more memory.");
+		errx(1, "estrdup: no more memory.");
 
 	memcpy(ret, str, size);
 
@@ -162,7 +162,7 @@ number_to_string(double num)
 	else
 		sprintf(buf, "%.0fB", num);
 
-	return xstrdup(buf);
+	return estrdup(buf);
 }
 
 /*
@@ -174,7 +174,7 @@ normalize_path(char *path)
 {
 	char *buf, *pos, *ret;
 
-	buf = pos = xmalloc(strlen(path) + 1);
+	buf = pos = emalloc(strlen(path) + 1);
 
 	while (*path != '\0') {
 		if (*path == '/') {
@@ -190,7 +190,7 @@ normalize_path(char *path)
 	else
 		*pos = '\0';
 
-	ret = xstrdup(buf);
+	ret = estrdup(buf);
 	free(buf);
 
 	return ret;
@@ -213,8 +213,8 @@ array_new(void)
 	struct array *array;
 
 	#define INITIAL_ARRAY_LIMIT 64
-	array = xmalloc(sizeof(struct array));
-	array->items = xmalloc(sizeof(void *) * INITIAL_ARRAY_LIMIT);
+	array = emalloc(sizeof(struct array));
+	array->items = emalloc(sizeof(void *) * INITIAL_ARRAY_LIMIT);
 	array->limit = INITIAL_ARRAY_LIMIT;
 	array->size = 0;
 
@@ -228,7 +228,7 @@ array_add(struct array *array, void *data)
 		size_t new_limit = array->limit * 2;
 
 		array->items =
-		    xrealloc(array->items, sizeof(void *) * new_limit);
+		    erealloc(array->items, sizeof(void *) * new_limit);
 		array->limit = new_limit;
 	}
 
@@ -268,7 +268,7 @@ file_info_new(char *name, off_t size)
 {
 	struct file_info *file_info;
 
-	file_info = xmalloc(sizeof(struct file_info));
+	file_info = emalloc(sizeof(struct file_info));
 	file_info->name = name;
 	file_info->size = size;
 
@@ -301,7 +301,7 @@ disk_new(off_t size)
 	static size_t id = 0;
 	struct disk *disk;
 
-	disk = xmalloc(sizeof(struct disk));
+	disk = emalloc(sizeof(struct disk));
 	disk->free = size;
 	disk->files = array_new();
 	disk->id = ++id;
@@ -418,7 +418,7 @@ disk_link(struct disk *disk, char *destdir)
 	if (disk->id > 9999)
 		errx(1, "disk_link: disk_id too big for format.");
 
-	path = xmalloc(strlen(destdir) + 6);
+	path = emalloc(strlen(destdir) + 6);
 	sprintf(path, "%s/%04lu", destdir, (unsigned long) disk->id);
 	temp = normalize_path(path);
 	free(path);
@@ -429,7 +429,7 @@ disk_link(struct disk *disk, char *destdir)
 		char *destfile, *slashpos;
 
 		destfile =
-		    xmalloc(strlen(path) + strlen(file_info->name) + 2);
+		    emalloc(strlen(path) + strlen(file_info->name) + 2);
 		sprintf(destfile, "%s/%s", path, file_info->name);
 
 		slashpos = strrchr(destfile, '/');
@@ -526,7 +526,7 @@ collect_files(char *path, struct array *files, int recursive)
 		    strcmp(de->d_name, "..") == 0)
 			continue;
 
-		fullname = xmalloc(strlen(path) + strlen(de->d_name) + 2);
+		fullname = emalloc(strlen(path) + strlen(de->d_name) + 2);
 		sprintf(fullname, "%s/%s", path, de->d_name);
 
 		if (stat(fullname, &sb) != 0)
