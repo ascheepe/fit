@@ -208,29 +208,28 @@ struct array {
 static struct array *
 array_new(void)
 {
-	struct array *array;
+	struct array *a;
 
 	#define INITIAL_ARRAY_LIMIT 64
-	array = emalloc(sizeof(struct array));
-	array->items = emalloc(sizeof(void *) * INITIAL_ARRAY_LIMIT);
-	array->limit = INITIAL_ARRAY_LIMIT;
-	array->size = 0;
+	a = emalloc(sizeof(struct array));
+	a->items = emalloc(sizeof(void *) * INITIAL_ARRAY_LIMIT);
+	a->limit = INITIAL_ARRAY_LIMIT;
+	a->size = 0;
 
-	return array;
+	return a;
 }
 
 static void
-array_add(struct array *array, void *data)
+array_add(struct array *a, void *data)
 {
-	if (array->size == array->limit) {
-		size_t new_limit = array->limit * 2;
+	if (a->size == a->limit) {
+		size_t new_limit = a->limit * 2;
 
-		array->items =
-		    erealloc(array->items, sizeof(void *) * new_limit);
-		array->limit = new_limit;
+		a->items = erealloc(a->items, sizeof(void *) * new_limit);
+		a->limit = new_limit;
 	}
 
-	array->items[array->size++] = data;
+	a->items[a->size++] = data;
 }
 
 /*
@@ -239,17 +238,17 @@ array_add(struct array *array, void *data)
  * the array.
  */
 static void
-array_free(struct array *array, void (*free_function)(void *))
+array_free(struct array *a, void (*free_function)(void *))
 {
 	if (free_function != NULL) {
 		size_t i;
 
-		for (i = 0; i < array->size; ++i)
-			free_function(array->items[i]);
+		for (i = 0; i < a->size; ++i)
+			free_function(a->items[i]);
 	}
 
-	free(array->items);
-	free(array);
+	free(a->items);
+	free(a);
 }
 
 /*
