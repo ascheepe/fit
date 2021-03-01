@@ -372,11 +372,11 @@ disk_print(struct disk *disk)
 static void
 make_dir(char *path)
 {
-	struct stat sb;
+	struct stat st;
 
 	/* if path already exists it should be a directory */
-	if (stat(path, &sb) == 0) {
-		if (!S_ISDIR(sb.st_mode))
+	if (stat(path, &st) == 0) {
+		if (!S_ISDIR(st.st_mode))
 			errx(1, "'%s' is not a directory.", path);
 
 		return;
@@ -516,7 +516,7 @@ collect_files(char *path, struct array *files, int recursive)
 		err(1, "can't open directory '%s'", path);
 
 	while ((de = readdir(dp)) != NULL) {
-		struct stat sb;
+		struct stat st;
 		char *fullname;
 
 		if (strcmp(de->d_name, ".") == 0 ||
@@ -526,25 +526,25 @@ collect_files(char *path, struct array *files, int recursive)
 		fullname = emalloc(strlen(path) + strlen(de->d_name) + 2);
 		sprintf(fullname, "%s/%s", path, de->d_name);
 
-		if (stat(fullname, &sb) != 0)
+		if (stat(fullname, &st) != 0)
 			err(1, "can't access '%s'", fullname);
 
-		if (S_ISDIR(sb.st_mode)) {
+		if (S_ISDIR(st.st_mode)) {
 			if (recursive)
 				collect_files(fullname, files, recursive);
 			free(fullname);
 		} else {
 			struct file_info *file_info;
 
-			if (sb.st_size > g_disk_size) {
+			if (st.st_size > g_disk_size) {
 				char *sizestr;
 
-				sizestr = number_to_string(sb.st_size);
+				sizestr = number_to_string(st.st_size);
 				errx(1, "can never fit '%s' (%s).",
 				    fullname, sizestr);
 			}
 
-			file_info = file_info_new(fullname, sb.st_size);
+			file_info = file_info_new(fullname, st.st_size);
 			array_add(files, file_info);
 		}
 	}
