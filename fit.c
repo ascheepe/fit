@@ -168,7 +168,7 @@ number_to_string(double num)
  * NOTE: realpath can not be used since the path may not exist.
  */
 static char *
-normalize_path(char *path)
+cleanpath(char *path)
 {
 	char *buf, *pos, *ret;
 
@@ -418,7 +418,7 @@ disk_link(struct disk *disk, char *destdir)
 
 	path = emalloc(strlen(destdir) + 6);
 	sprintf(path, "%s/%04lu", destdir, (unsigned long) disk->id);
-	temp = normalize_path(path);
+	temp = cleanpath(path);
 	free(path);
 	path = temp;
 
@@ -577,7 +577,7 @@ main(int argc, char **argv)
 			break;
 
 		case 'l':
-			destdir = normalize_path(optarg);
+			destdir = cleanpath(optarg);
 			++lflag;
 			break;
 
@@ -611,7 +611,7 @@ main(int argc, char **argv)
 	for (arg = optind; arg < argc; ++arg) {
 		char *path;
 
-		path = normalize_path(argv[arg]);
+		path = cleanpath(argv[arg]);
 		collect_files(path, files, rflag);
 		free(path);
 	}
