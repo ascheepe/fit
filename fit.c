@@ -524,11 +524,7 @@ collect_files(char *path, struct array *files, int recursive)
 		if (stat(fullname, &st) != 0)
 			err(1, "can't access '%s'", fullname);
 
-		if (S_ISDIR(st.st_mode)) {
-			if (recursive)
-				collect_files(fullname, files, recursive);
-			free(fullname);
-		} else {
+		if (S_ISREG(st.st_mode)) {
 			struct fileinfo *fileinfo;
 
 			if (st.st_size > g_disk_size) {
@@ -541,6 +537,12 @@ collect_files(char *path, struct array *files, int recursive)
 
 			fileinfo = fileinfo_new(fullname, st.st_size);
 			array_add(files, fileinfo);
+		} else if (S_ISDIR(st.st_mode)) {
+			if (recursive)
+				collect_files(fullname, files, recursive);
+			free(fullname);
+		} else {
+			err(1, "'%s': not a regular file.", fullname);
 		}
 	}
 
