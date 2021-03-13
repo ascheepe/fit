@@ -333,22 +333,22 @@ print_line(int len)
 static void
 disk_print(struct disk *disk)
 {
-	char hdr[BUFSIZE];
-	size_t hdrlen, i;
+	char header[BUFSIZE];
+	size_t headerlen, i;
 	char *sizestr;
 
 	/* print a nice header */
 	sizestr = number_to_string(disk->free);
-	sprintf(hdr, "Disk #%lu, %d%% (%s) free:",
+	sprintf(header, "Disk #%lu, %d%% (%s) free:",
 	    (unsigned long) disk->id,
 	    (int) (disk->free * 100 / g_disk_size), sizestr);
 	free(sizestr);
 
-	hdrlen = strlen(hdr);
+	headerlen = strlen(header);
 
-	print_line(hdrlen);
-	printf("%s\n", hdr);
-	print_line(hdrlen);
+	print_line(headerlen);
+	printf("%s\n", header);
+	print_line(headerlen);
 
 	/* and the contents */
 	for (i = 0; i < disk->files->size; ++i) {
