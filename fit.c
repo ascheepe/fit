@@ -623,7 +623,8 @@ main(int argc, char **argv)
 	 * functions above assume a format string which will fit 4 digits.
 	 */
 	if (disks->size > 9999)
-		errx(1, "fitting takes too many disks. (> 9999)");
+		errx(1, "fitting takes too many disks. (%lu)",
+		    disks->size);
 
 	if (nflag) {
 		printf("%lu disk%s.\n", (unsigned long) disks->size,
