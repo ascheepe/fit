@@ -221,6 +221,9 @@ array_add(struct array *a, void *data)
 	if (a->size == a->limit) {
 		size_t new_limit = a->limit * 2;
 
+		if (new_limit < a->limit)
+			errx(1, "array_add: overflow.");
+
 		a->items = erealloc(a->items, sizeof(void *) * new_limit);
 		a->limit = new_limit;
 	}
