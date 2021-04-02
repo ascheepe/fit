@@ -81,11 +81,15 @@ erealloc(void *ptr, size_t size)
 static char *
 estrdup(const char *str)
 {
+	size_t size;
 	char *ret;
 
-	ret = strdup(str);
+	size = strlen(str) + 1;
+	ret = malloc(size);
 	if (ret == NULL)
 		errx(1, "estrdup: no more memory.");
+
+	memcpy(ret, str, size);
 
 	return ret;
 }
